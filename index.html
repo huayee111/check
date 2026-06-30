@@ -53,11 +53,15 @@
         /* 🛠️ 更多功能與請假紀錄專區樣式 */
         .query-panel { max-width: 400px; margin: 15px auto 0 auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: left; }
         .query-panel h3 { margin-top: 0; color: #333; border-bottom: 2px solid #6c757d; padding-bottom: 5px; font-size: 18px; margin-bottom: 15px; }
-        .leave-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; table-layout: fixed; }
-        .leave-table th, .leave-table td { border: 1px solid #ddd; padding: 8px; text-align: left; word-break: break-all; }
-        .leave-table th { background-color: #f1f8ff; font-weight: bold; color: #333; }
-        .col-date { width: 90px; }
-        .future-date-highlight { color: #e65100; font-weight: bold; }
+        
+        /* 🚀 智慧微調：外層容器支援 X 軸左右滑動，並加上捲軸樣式美化 */
+        .leave-table-responsive { width: 100%; overflow-x: auto; margin-top: 10px; border: 1px solid #ddd; border-radius: 6px; }
+        .leave-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: auto; min-width: 650px; /* 🚀 強制設定最小總寬度，確保所有欄位不擠壓可完整滑動 */ }
+        .leave-table th, .leave-table td { border: 1px solid #ddd; padding: 10px 8px; text-align: left; white-space: nowrap; /* 🚀 文字不換行，優雅延展 */ }
+        .leave-table th { background-color: #f1f8ff; font-weight: bold; color: #333; position: sticky; top: 0; }
+        
+        .col-date { width: 95px; min-width: 95px; }
+        .future-date-highlight { color: #FF0000; font-weight: bold; }
         .hint-red-text { color: #d32f2f; font-size: 12px; margin-top: 8px; font-weight: 500; display: block; }
 
         /* ❓ 智慧 FAQ 專屬分頁樣式 */
@@ -84,7 +88,6 @@
         <h2>行動打卡系統&公告</h2>
         <p style="font-size: 13px; color: #888; margin-top: 0;">內部專用系統</p>
         
-        <!-- 👤 名單更新：蔡銘宸 改為 外務倉管 -->
         <label for="empName">👤 選擇您的姓名：</label>
         <select id="empName">
             <option value="">-- 請選擇您的姓名 --</option>
@@ -94,7 +97,6 @@
             <option value="外務倉管">外務倉管</option>
         </select>
         
-        <!-- 🔒 密碼框精準維持 4 碼限制 -->
         <label for="empPassword">🔒 輸入 4 位數密碼：</label>
         <input type="password" id="empPassword" pattern="\d*" inputmode="numeric" maxlength="4" placeholder="請輸入密碼">
         
@@ -124,27 +126,25 @@
         </div>
     </div>
 
-    <!-- 🛠️ 更多功能專區 (舒緩和諧的莫蘭迪色系按鈕) -->
+    <!-- 🛠️ 更多功能專區 -->
     <div class="query-panel" id="queryPanel">
         <h3>🛠️ 更多功能專區</h3>
         
-        <!-- 按鈕 1：補登申請 (柔和灰藍色) -->
         <button type="button" id="btn補登" onclick="openRepairClick()" style="background-color: #5C89C3; color: white; font-weight: bold; padding: 12px; border-radius: 5px; border: none; cursor: pointer; font-size: 16px; width: 100%; margin-bottom: 12px; margin-top: 0;">
             📝 忘記打卡？點此申請補登
         </button>
 
-        <!-- 按鈕 2：請假明細查詢 (柔和薄荷綠) -->
         <button type="button" onclick="queryMyLeaveRecords()" style="background-color: #68B08A; color: white; font-weight: bold; padding: 12px; border-radius: 5px; font-size: 16px; margin-top: 0; width: 100%; margin-bottom: 12px;">
             🌴 點此同步查詢我的請假明細
         </button>
 
-        <!-- 按鈕 3：常見問題 FAQ (溫暖柔和橘) -->
         <button type="button" onclick="switchToFAQPage()" style="background-color: #E8A359; color: white; font-weight: bold; padding: 12px; border-radius: 5px; font-size: 16px; margin-top: 0; width: 100%;">
             💡 公司常見問題 (FAQ)
         </button>
         
+        <!-- 🚀 請假紀錄顯示區：已套用滑動容器與新增完整欄位 -->
         <div id="queryResultArea" style="display: none; margin-top: 15px;">
-            <div id="leaveTableArea" style="max-height: 250px; overflow-y: auto;">
+            <div id="leaveTableArea" class="leave-table-responsive" style="max-height: 280px; overflow-y: auto;">
                 <table class="leave-table" id="leaveTable">
                     <thead>
                         <tr>
@@ -152,6 +152,9 @@
                             <th>假別</th>
                             <th>天數/時數</th>
                             <th>原因</th>
+                            <th>剩餘特休</th>
+                            <th>備註</th>
+                            <th>特休重置日</th>
                         </tr>
                     </thead>
                     <tbody id="leaveTableBody"></tbody>
@@ -245,7 +248,7 @@ function queryMyLeaveRecords() {
             statusDiv.innerHTML = "✅ 請假紀錄同步成功！"; statusDiv.style.color = "green";
             const tbody = document.getElementById("leaveTableBody"); tbody.innerHTML = "";
             if (res.leaveRecords.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">目前尚無您的請假紀錄。</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#999;">目前尚無您的請假紀錄。</td></tr>`;
             } else {
                 const todayObj = new Date(); todayObj.setHours(0,0,0,0);
                 res.leaveRecords.forEach(rec => {
@@ -253,7 +256,17 @@ function queryMyLeaveRecords() {
                     const recordDateObj = new Date(rec.date); recordDateObj.setHours(0,0,0,0);
                     let isFuture = recordDateObj.getTime() > todayObj.getTime();
                     const dateTdHtml = isFuture ? `<td class="future-date-highlight">${rec.date}</td>` : `<td>${rec.date}</td>`;
-                    tr.innerHTML = `${dateTdHtml}<td>${rec.type}</td><td>${rec.duration}</td><td>${rec.reason}</td>`;
+                    
+                    // 🚀 前端渲染更新：依序帶出 A日期 至 H特休重置日 的完整對應值
+                    tr.innerHTML = `
+                        ${dateTdHtml}
+                        <td>${rec.type || ''}</td>
+                        <td>${rec.duration || ''}</td>
+                        <td>${rec.reason || ''}</td>
+                        <td>${rec.remain !== undefined ? rec.remain : ''}</td>
+                        <td>${rec.note || ''}</td>
+                        <td>${rec.reset || ''}</td>
+                    `;
                     tbody.appendChild(tr);
                 });
             }
