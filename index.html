@@ -54,10 +54,10 @@
         .query-panel { max-width: 400px; margin: 15px auto 0 auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: left; }
         .query-panel h3 { margin-top: 0; color: #333; border-bottom: 2px solid #6c757d; padding-bottom: 5px; font-size: 18px; margin-bottom: 15px; }
         
-        /* 🚀 智慧微調：外層容器支援 X 軸左右滑動，並加上捲軸樣式美化 */
+        /* 外層容器支援 X 軸左右滑動 */
         .leave-table-responsive { width: 100%; overflow-x: auto; margin-top: 10px; border: 1px solid #ddd; border-radius: 6px; }
-        .leave-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: auto; min-width: 650px; /* 🚀 強制設定最小總寬度，確保所有欄位不擠壓可完整滑動 */ }
-        .leave-table th, .leave-table td { border: 1px solid #ddd; padding: 10px 8px; text-align: left; white-space: nowrap; /* 🚀 文字不換行，優雅延展 */ }
+        .leave-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: auto; min-width: 650px; }
+        .leave-table th, .leave-table td { border: 1px solid #ddd; padding: 10px 8px; text-align: left; white-space: nowrap; }
         .leave-table th { background-color: #f1f8ff; font-weight: bold; color: #333; position: sticky; top: 0; }
         
         .col-date { width: 95px; min-width: 95px; }
@@ -81,7 +81,6 @@
 </head>
 <body>
 
-<!-- 主頁面：打卡與公告 -->
 <div id="mainPage">
     <div id="punchCard" class="card">
         <img src="YOUR_IMAGE_URL_HERE" alt="Company Logo" class="logo-img" onerror="this.style.display='none'">
@@ -126,7 +125,6 @@
         </div>
     </div>
 
-    <!-- 🛠️ 更多功能專區 -->
     <div class="query-panel" id="queryPanel">
         <h3>🛠️ 更多功能專區</h3>
         
@@ -142,7 +140,6 @@
             💡 公司常見問題 (FAQ)
         </button>
         
-        <!-- 🚀 請假紀錄顯示區：已套用滑動容器與新增完整欄位 -->
         <div id="queryResultArea" style="display: none; margin-top: 15px;">
             <div id="leaveTableArea" class="leave-table-responsive" style="max-height: 280px; overflow-y: auto;">
                 <table class="leave-table" id="leaveTable">
@@ -165,7 +162,6 @@
     </div>
 </div>
 
-<!-- 獨立 FAQ 專屬分頁 -->
 <div id="faqPage" class="faq-panel">
     <h2>💡 公司常見問題 (FAQ)</h2>
     <input type="text" id="faqSearchInput" class="search-box" placeholder="🔍 輸入關鍵字或標題搜尋常見問題..." oninput="handleFAQSearch()">
@@ -184,7 +180,6 @@
     </button>
 </div>
 
-<!-- 彈出視窗：補登 Modal -->
 <div id="repairModal" style="display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
     <div style="background-color: white; padding: 25px; border-radius: 10px; max-width: 350px; width: 90%; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
         <h3 style="margin-top: 0; color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px;">⏰ 出勤補登申請</h3>
@@ -198,7 +193,7 @@
             <option value="下班">🌌 下班補登</option>
         </select>
         <div style="margin-top: 15px; background: #fff3cd; color: #856404; padding: 12px; border-radius: 5px; font-size: 13px; line-height: 1.5; border: 1px solid #ffeeba; text-align: justify;">
-            ⚠️ <b>切結聲明：</b>本人聲明以上填寫之補登日期與時間皆屬實，確為實際到離職時間。若有虛報或偽造出勤紀錄之情事，本人願承擔公司管理辦法之處分與相關法律責任。
+            ⚠️ <b>切結聲意：</b>本人聲明以上填寫之補登日期與時間皆屬實，確為實際到離職時間。若有虛報或偽造出勤紀錄之情事，本人願承擔公司管理辦法之處分與相關法律責任。
         </div>
         <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button type="button" onclick="closeRepairModal()" style="flex:1; padding:12px; background:#6c757d; color:white; border:none; border-radius:5px; cursor:pointer; font-size:15px;">取消</button>
@@ -224,10 +219,10 @@ let FILTERED_FAQS = [];
 let faqCurrentPage = 1;
 let faqPageSize = 10;
 
+// ⚡ 優化：初次加載不請求 FAQ，減少後台並發負載
 window.onload = function() {
     renderPunchButton();
     fetchAnnouncements(); 
-    fetchFAQData(); 
 };
 
 function queryMyLeaveRecords() {
@@ -257,7 +252,6 @@ function queryMyLeaveRecords() {
                     let isFuture = recordDateObj.getTime() > todayObj.getTime();
                     const dateTdHtml = isFuture ? `<td class="future-date-highlight">${rec.date}</td>` : `<td>${rec.date}</td>`;
                     
-                    // 🚀 前端渲染更新：依序帶出 A日期 至 H特休重置日 的完整對應值
                     tr.innerHTML = `
                         ${dateTdHtml}
                         <td>${rec.type || ''}</td>
@@ -449,17 +443,24 @@ function submitRepair() {
 function fetchFAQData() {
     fetch(`${GAS_URL}?action=getFAQ`).then(res => res.json()).then(data => {
         RAW_FAQS = data; FILTERED_FAQS = [...RAW_FAQS];
-        if(document.getElementById("faqPage").style.display === "block") { renderFAQPage(); }
+        renderFAQPage();
     }).catch(() => {
         document.getElementById("faqListBox").innerHTML = "<p style='color:red;'>❌ 無法讀取FAQ庫，請稍後重試。</p>";
     });
 }
 
+// ⚡ 優化：當點擊按鈕切換到 FAQ 頁面時，才動態觸發 fetch 載入
 function switchToFAQPage() {
     document.getElementById("mainPage").style.display = "none";
     document.getElementById("faqPage").style.display = "block";
     faqCurrentPage = 1;
-    if (RAW_FAQS.length === 0) { fetchFAQData(); } else { renderFAQPage(); }
+    
+    if (RAW_FAQS.length === 0) { 
+        document.getElementById("faqListBox").innerHTML = "🔄 正在同步常見問題庫...";
+        fetchFAQData(); 
+    } else { 
+        renderFAQPage(); 
+    }
     window.scrollTo(0, 0);
 }
 
