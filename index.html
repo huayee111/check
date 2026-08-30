@@ -43,13 +43,13 @@
         .ann-content-body { font-size: 15px; color: #444; line-height: 1.6; }
         .ann-content-img { max-width: 100%; height: auto; display: block; margin: 15px auto 0 auto; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
-        /* 📎 附件與超連結區塊樣式 */
-        .ann-links-container { margin-top: 20px; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; }
-        .ann-links-title { font-size: 14px; font-weight: bold; color: #495057; margin-bottom: 8px; }
-        .ann-links-list { display: flex; flex-direction: column; gap: 8px; }
+        /* 📎 附件與超連結區塊共用樣式 */
+        .ann-links-container, .faq-links-container { margin-top: 15px; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; }
+        .ann-links-title, .faq-links-title { font-size: 13.5px; font-weight: bold; color: #495057; margin-bottom: 8px; }
+        .ann-links-list, .faq-links-list { display: flex; flex-direction: column; gap: 8px; }
         .ann-link-btn { display: inline-flex; align-items: center; justify-content: space-between; padding: 8px 12px; background-color: #ffffff; color: #007bff; border: 1px solid #b8daff; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s; word-break: break-all; }
         .ann-link-btn:hover { background-color: #e8f4fd; border-color: #007bff; color: #0056b3; }
-        .ann-text-only { display: inline-block; padding: 6px 10px; background-color: #e9ecef; color: #495057; border-radius: 6px; font-size: 13.5px; border: 1px solid #ced4da; }
+        .ann-text-only { display: inline-block; padding: 6px 10px; background-color: #e9ecef; color: #495057; border-radius: 6px; font-size: 13px; border: 1px solid #ced4da; }
 
         .ann-nav-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 25px; margin-top: 20px; }
         .ann-btn { padding: 10px; border-radius: 5px; font-size: 13px; font-weight: bold; background-color: #6c757d; color: white; border: none; cursor: pointer; text-align: center; }
@@ -114,7 +114,6 @@
     <div class="announcement-panel" id="annPanel">
         <div id="annListView">
             <h3>📢 公司最新公告</h3>
-            <!-- 🔍 更新搜尋提示文字 -->
             <input type="text" id="annSearchInput" class="search-box" placeholder="🔍 搜尋標題、內文關鍵字... (例如：休假、獎金)" oninput="handleSearch()">
             <div id="mainAnnList" class="ann-list-box">🔄 正在從後台同步最新公告...</div>
             <div id="annPagination" class="pagination-container"></div>
@@ -295,7 +294,6 @@ function fetchAnnouncements() {
     });
 }
 
-// 🔍 支援同時比對標題、內文與附件關鍵字
 function handleSearch() {
     const keyword = document.getElementById("annSearchInput").value.trim().toLowerCase();
     if (!keyword) { 
@@ -521,12 +519,15 @@ function switchToMainPage() {
 
 function handleFAQSearch() {
     const sWord = document.getElementById("faqSearchInput").value.trim().toLowerCase();
-    if (!sWord) { FILTERED_FAQS = [...RAW_FAQS]; } else {
+    if (!sWord) { 
+        FILTERED_FAQS = [...RAW_FAQS]; 
+    } else {
         FILTERED_FAQS = RAW_FAQS.filter(item => {
             const q = (item.q || "").toLowerCase();
             const a = (item.a || "").toLowerCase();
             const t = (item.t || "").toLowerCase();
-            return q.includes(sWord) || a.includes(sWord) || t.includes(sWord);
+            const linkMatch = item.links && item.links.some(l => (l.text || "").toLowerCase().includes(sWord));
+            return q.includes(sWord) || a.includes(sWord) || t.includes(sWord) || linkMatch;
         });
     }
     faqCurrentPage = 1;
@@ -564,8 +565,37 @@ function renderFAQPage() {
     
     for (let i = start; i < end; i++) {
         const item = FILTERED_FAQS[i];
-        const faqWrapper = document.createElement("div"); faqWrapper.className = "faq-accordion";
-        faqWrapper.innerHTML = `<div class="faq-header" onclick="toggleFAQAccordion(this)"><b>Q: ${item.q || ''}</b></div><div class="faq-content">A: ${item.a || ''}</div>`;
+        
+        // 建立附件與外部連結 HTML
+        let linksHtml = "";
+        if (item.links && item.links.length > 0) {
+            let linksListHtml = "";
+            item.links.forEach(linkItem => {
+                if (linkItem.url) {
+                    linksListHtml += `<a href="${linkItem.url}" target="_blank" rel="noopener noreferrer" class="ann-link-btn"><span>🔗 ${linkItem.text}</span><span style="font-size: 12px; margin-left: 8px;">開啟 ↗</span></a>`;
+                } else {
+                    linksListHtml += `<div class="ann-text-only">📄 ${linkItem.text}</div>`;
+                }
+            });
+            linksHtml = `
+                <div class="faq-links-container">
+                    <div class="faq-links-title">📎 相關附件 / 外部連結：</div>
+                    <div class="faq-links-list">${linksListHtml}</div>
+                </div>
+            `;
+        }
+        
+        const faqWrapper = document.createElement("div"); 
+        faqWrapper.className = "faq-accordion";
+        faqWrapper.innerHTML = `
+            <div class="faq-header" onclick="toggleFAQAccordion(this)">
+                <b>Q: ${item.q || ''}</b>
+            </div>
+            <div class="faq-content">
+                <div>A: ${item.a || ''}</div>
+                ${linksHtml}
+            </div>
+        `;
         container.appendChild(faqWrapper);
     }
     
