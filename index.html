@@ -42,6 +42,15 @@
         .ann-content-date { font-size: 13px; color: #888; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
         .ann-content-body { font-size: 15px; color: #444; line-height: 1.6; }
         .ann-content-img { max-width: 100%; height: auto; display: block; margin: 15px auto 0 auto; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        /* 📎 附件與超連結區塊樣式 */
+        .ann-links-container { margin-top: 20px; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; }
+        .ann-links-title { font-size: 14px; font-weight: bold; color: #495057; margin-bottom: 8px; }
+        .ann-links-list { display: flex; flex-direction: column; gap: 8px; }
+        .ann-link-btn { display: inline-flex; align-items: center; justify-content: space-between; padding: 8px 12px; background-color: #ffffff; color: #007bff; border: 1px solid #b8daff; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s; word-break: break-all; }
+        .ann-link-btn:hover { background-color: #e8f4fd; border-color: #007bff; color: #0056b3; }
+        .ann-text-only { display: inline-block; padding: 6px 10px; background-color: #e9ecef; color: #495057; border-radius: 6px; font-size: 13.5px; border: 1px solid #ced4da; }
+
         .ann-nav-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 25px; margin-top: 20px; }
         .ann-btn { padding: 10px; border-radius: 5px; font-size: 13px; font-weight: bold; background-color: #6c757d; color: white; border: none; cursor: pointer; text-align: center; }
         .ann-btn:hover { background-color: #5a6268; }
@@ -114,6 +123,13 @@
             <div id="annContentDate" class="ann-content-date"></div>
             <div id="annContentBody" class="ann-content-body"></div>
             <div id="annContentImgContainer"></div>
+            
+            <!-- 📎 附件與超連結展示區 -->
+            <div id="annContentLinksContainer" class="ann-links-container" style="display: none;">
+                <div class="ann-links-title">📎 相關附件 / 外部連結：</div>
+                <div id="annLinksList" class="ann-links-list"></div>
+            </div>
+
             <div class="ann-nav-buttons">
                 <button class="ann-btn" id="btnPrevAnn" onclick="changeAnn(-1)">◀ 上一則</button>
                 <button class="ann-btn back-list" onclick="showAnnList()">📋 回列表</button>
@@ -205,7 +221,7 @@
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzCdoO5z1ocJJVsjOMaZJpafHMvkhKwWcEhPqq8ltKnyljMB6Tc9wPIjfW27-FU1CeM/exec"; 
 const COMPANY_LAT = 23.484433301249886; 
 const COMPANY_LNG = 120.4440414095138;  
-const MAX_DISTANCE = 200;                
+const MAX_DISTANCE = 200;               
 
 let ANNOUNCEMENTS = [];      
 let FILTERED_ANNS = [];      
@@ -346,6 +362,35 @@ function showAnnContent(filteredIndex) {
             const imgTag = document.createElement("img"); imgTag.src = imgUrl; imgTag.className = "ann-content-img"; imgContainer.appendChild(imgTag);
         }
     });
+
+    // 📎 渲染附件與外部超連結
+    const linksContainer = document.getElementById("annContentLinksContainer");
+    const linksList = document.getElementById("annLinksList");
+    linksList.innerHTML = "";
+    if (ann.links && ann.links.length > 0) {
+        ann.links.forEach(linkItem => {
+            if (linkItem.url) {
+                // 有超連結：顯示可點擊按鈕
+                const aTag = document.createElement("a");
+                aTag.href = linkItem.url;
+                aTag.target = "_blank";
+                aTag.rel = "noopener noreferrer";
+                aTag.className = "ann-link-btn";
+                aTag.innerHTML = `<span>🔗 ${linkItem.text}</span> <span style="font-size: 12px; margin-left: 8px;">開啟 ↗</span>`;
+                linksList.appendChild(aTag);
+            } else {
+                // 無超連結：僅顯示文字標籤
+                const spanTag = document.createElement("div");
+                spanTag.className = "ann-text-only";
+                spanTag.innerText = `📄 ${linkItem.text}`;
+                linksList.appendChild(spanTag);
+            }
+        });
+        linksContainer.style.display = "block";
+    } else {
+        linksContainer.style.display = "none";
+    }
+
     const subContainer = document.getElementById("subAnnList"); subContainer.innerHTML = ""; let subCount = 0;
     FILTERED_ANNS.forEach((subAnn, idx) => {
         if (idx !== filteredIndex && subCount < 4) { 
