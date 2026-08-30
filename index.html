@@ -114,7 +114,8 @@
     <div class="announcement-panel" id="annPanel">
         <div id="annListView">
             <h3>📢 公司最新公告</h3>
-            <input type="text" id="annSearchInput" class="search-box" placeholder="🔍 輸入關鍵字搜尋公告標題... (例如：人事)" oninput="handleSearch()">
+            <!-- 🔍 更新搜尋提示文字 -->
+            <input type="text" id="annSearchInput" class="search-box" placeholder="🔍 搜尋標題、內文關鍵字... (例如：休假、獎金)" oninput="handleSearch()">
             <div id="mainAnnList" class="ann-list-box">🔄 正在從後台同步最新公告...</div>
             <div id="annPagination" class="pagination-container"></div>
         </div>
@@ -124,7 +125,6 @@
             <div id="annContentBody" class="ann-content-body"></div>
             <div id="annContentImgContainer"></div>
             
-            <!-- 📎 附件與超連結展示區 -->
             <div id="annContentLinksContainer" class="ann-links-container" style="display: none;">
                 <div class="ann-links-title">📎 相關附件 / 外部連結：</div>
                 <div id="annLinksList" class="ann-links-list"></div>
@@ -295,12 +295,21 @@ function fetchAnnouncements() {
     });
 }
 
+// 🔍 支援同時比對標題、內文與附件關鍵字
 function handleSearch() {
     const keyword = document.getElementById("annSearchInput").value.trim().toLowerCase();
-    if (!keyword) { FILTERED_ANNS = [...ANNOUNCEMENTS]; } else {
-        FILTERED_ANNS = ANNOUNCEMENTS.filter(ann => (ann.title || "").toLowerCase().includes(keyword));
+    if (!keyword) { 
+        FILTERED_ANNS = [...ANNOUNCEMENTS]; 
+    } else {
+        FILTERED_ANNS = ANNOUNCEMENTS.filter(ann => {
+            const titleMatch = (ann.title || "").toLowerCase().includes(keyword);
+            const contentMatch = (ann.contentRaw || "").toLowerCase().includes(keyword);
+            const linkMatch = ann.links && ann.links.some(l => (l.text || "").toLowerCase().includes(keyword));
+            return titleMatch || contentMatch || linkMatch;
+        });
     }
-    currentPage = 1; renderPage();
+    currentPage = 1; 
+    renderPage();
 }
 
 function formatDateString(dateStr) {
@@ -363,14 +372,12 @@ function showAnnContent(filteredIndex) {
         }
     });
 
-    // 📎 渲染附件與外部超連結
     const linksContainer = document.getElementById("annContentLinksContainer");
     const linksList = document.getElementById("annLinksList");
     linksList.innerHTML = "";
     if (ann.links && ann.links.length > 0) {
         ann.links.forEach(linkItem => {
             if (linkItem.url) {
-                // 有超連結：顯示可點擊按鈕
                 const aTag = document.createElement("a");
                 aTag.href = linkItem.url;
                 aTag.target = "_blank";
@@ -379,7 +386,6 @@ function showAnnContent(filteredIndex) {
                 aTag.innerHTML = `<span>🔗 ${linkItem.text}</span> <span style="font-size: 12px; margin-left: 8px;">開啟 ↗</span>`;
                 linksList.appendChild(aTag);
             } else {
-                // 無超連結：僅顯示文字標籤
                 const spanTag = document.createElement("div");
                 spanTag.className = "ann-text-only";
                 spanTag.innerText = `📄 ${linkItem.text}`;
@@ -581,7 +587,7 @@ function renderFAQPage() {
         }
         if (endP < totalPages) {
             if (endP < totalPages - 1) { const ell = document.createElement("span"); ell.className = "page-ellipsis"; ell.innerText = "..."; pagination.appendChild(ell); }
-            const lBtn = document.createElement("button"); lBtn.className = "page-btn"; lBtn.innerText = totalPages; lBtn.onclick = () => { faqCurrentPage = totalPages; renderFAQPage(); }; pagination.appendChild(lBtn);
+            const lBtn = document.createElement("button"); lBtn.className = "page-btn"; lBtn.innerText = totalPages; lastBtn.onclick = () => { faqCurrentPage = totalPages; renderFAQPage(); }; pagination.appendChild(lBtn);
         }
         const next = document.createElement("button"); next.className = "page-btn"; next.innerText = "»"; next.disabled = (faqCurrentPage === totalPages);
         next.onclick = () => { faqCurrentPage++; renderFAQPage(); }; pagination.appendChild(next);
