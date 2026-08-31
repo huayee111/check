@@ -194,6 +194,7 @@
     </button>
 </div>
 
+<!-- ⏰ 出勤補登申請彈窗 -->
 <div id="repairModal" style="display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
     <div style="background-color: white; padding: 25px; border-radius: 10px; max-width: 350px; width: 90%; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
         <h3 style="margin-top: 0; color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px;">⏰ 出勤補登申請</h3>
@@ -212,6 +213,32 @@
         <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button type="button" onclick="closeRepairModal()" style="flex:1; padding:12px; background:#6c757d; color:white; border:none; border-radius:5px; cursor:pointer; font-size:15px;">取消</button>
             <button type="button" onclick="submitRepair()" style="flex:1; padding:12px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:15px;">同意並送出</button>
+        </div>
+    </div>
+</div>
+
+<!-- 📢 今日新公告提醒彈窗 -->
+<div id="todayAnnModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.55); align-items: center; justify-content: center;">
+    <div style="background-color: white; padding: 25px 20px; border-radius: 12px; max-width: 350px; width: 88%; text-align: center; box-shadow: 0 6px 16px rgba(0,0,0,0.25); animation: fadeInPop 0.25s ease;">
+        <div style="font-size: 38px; margin-bottom: 5px;">📢</div>
+        <h3 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 20px; font-weight: bold;">提醒：今日有新公告喲！</h3>
+        <p style="font-size: 14px; color: #666; margin: 0 0 15px 0; line-height: 1.5;">公司今日發布了最新消息，請同仁留意並查閱相關內容。</p>
+        
+        <!-- 今日公告標題清單 -->
+        <div id="todayAnnListPreview" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 10px; margin-bottom: 15px; text-align: left; max-height: 120px; overflow-y: auto;"></div>
+
+        <!-- 今日不再提醒核取方塊 -->
+        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 18px; font-size: 14px; color: #555; cursor: pointer;">
+            <label style="display: flex; align-items: center; cursor: pointer; margin: 0; font-weight: normal;">
+                <input type="checkbox" id="chkDismissTodayAnn" style="width: 17px; height: 17px; margin-right: 6px; cursor: pointer;">
+                今日不再提醒
+            </label>
+        </div>
+
+        <!-- 按鈕區 -->
+        <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="closeTodayAnnNotice(false)" style="flex: 1; padding: 11px 0; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14.5px; font-weight: bold;">確認</button>
+            <button type="button" onclick="closeTodayAnnNotice(true)" style="flex: 1.2; padding: 11px 0; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14.5px; font-weight: bold;">🔍 馬上去查看</button>
         </div>
     </div>
 </div>
@@ -288,10 +315,70 @@ function queryMyLeaveRecords() {
 
 function fetchAnnouncements() {
     fetch(GAS_URL).then(response => response.json()).then(data => {
-        ANNOUNCEMENTS = data || []; FILTERED_ANNS = [...ANNOUNCEMENTS]; currentPage = 1; renderPage();
+        ANNOUNCEMENTS = data || []; 
+        FILTERED_ANNS = [...ANNOUNCEMENTS]; 
+        currentPage = 1; 
+        renderPage();
+        checkTodayAnnouncements(); // 檢查今日是否有新公告並彈窗
     }).catch(err => {
         document.getElementById("mainAnnList").innerHTML = "<p style='color:red; font-size:14px;'>❌ 無法載入公告，請重新整理網頁。</p>";
     });
+}
+
+// 🔔 檢查今日是否有新公告並彈出提醒
+function checkTodayAnnouncements() {
+    if (!ANNOUNCEMENTS || ANNOUNCEMENTS.length === 0) return;
+
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+    
+    // 檢查使用者是否已設定「今日不再提醒」
+    const dismissedDate = localStorage.getItem("dismiss_today_ann_date");
+    if (dismissedDate === todayStr) {
+        return; // 今天已選擇不再提醒，略過
+    }
+
+    // 篩選出日期為今天的公告
+    const todayAnns = ANNOUNCEMENTS.filter(ann => formatDateString(ann.date) === todayStr);
+
+    if (todayAnns.length > 0) {
+        const previewContainer = document.getElementById("todayAnnListPreview");
+        previewContainer.innerHTML = "";
+        todayAnns.forEach((item, index) => {
+            const div = document.createElement("div");
+            div.style.fontSize = "13px";
+            div.style.color = "#333";
+            div.style.marginBottom = index === todayAnns.length - 1 ? "0" : "6px";
+            div.style.whiteSpace = "nowrap";
+            div.style.overflow = "hidden";
+            div.style.textOverflow = "ellipsis";
+            div.innerHTML = `📌 <b>${item.title}</b>`;
+            previewContainer.appendChild(div);
+        });
+
+        document.getElementById("chkDismissTodayAnn").checked = false;
+        document.getElementById("todayAnnModal").style.display = "flex";
+    }
+}
+
+// 關閉今日新公告提醒視窗
+function closeTodayAnnNotice(shouldScrollToAnn) {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+    const isDismissChecked = document.getElementById("chkDismissTodayAnn").checked;
+
+    if (isDismissChecked) {
+        localStorage.setItem("dismiss_today_ann_date", todayStr);
+    }
+
+    document.getElementById("todayAnnModal").style.display = "none";
+
+    if (shouldScrollToAnn) {
+        const annPanel = document.getElementById("annPanel");
+        if (annPanel) {
+            annPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
 }
 
 function handleSearch() {
@@ -566,7 +653,6 @@ function renderFAQPage() {
     for (let i = start; i < end; i++) {
         const item = FILTERED_FAQS[i];
         
-        // 建立附件與外部連結 HTML
         let linksHtml = "";
         if (item.links && item.links.length > 0) {
             let linksListHtml = "";
